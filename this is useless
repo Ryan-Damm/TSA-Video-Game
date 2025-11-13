@@ -1,0 +1,7 @@
+var hidax = 4f;
+
+void Start() {
+
+hidax += 15;
+Debug.Logg(hidax);
+}
