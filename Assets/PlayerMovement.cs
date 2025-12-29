@@ -28,6 +28,8 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] float _smallCrouchSize;
     float _regularYSize;
 
+    int _keyCount;
+
     float _xMove;
     bool _isJumping;
     public bool canMove;
@@ -38,6 +40,11 @@ public class PlayerMovement : MonoBehaviour
 
         _rb = GetComponent<Rigidbody2D>();
         canMove = true;
+    }
+
+    private void Start()
+    {
+        _keyCount = 0;
     }
 
     private void Update()
@@ -135,6 +142,15 @@ public class PlayerMovement : MonoBehaviour
         if(collision.gameObject.CompareTag("Bounce"))
         {
             _rb.AddForceY(_bounceForce);
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if(collision.gameObject.CompareTag("Key"))
+        {
+            _keyCount++;
+            Destroy(collision.gameObject);
         }
     }
 }
