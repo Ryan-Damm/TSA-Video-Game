@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
@@ -18,7 +20,13 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] float _jumpLowGrav;
 
     [SerializeField] Transform _groundCheckCircle;
+    [SerializeField] Transform _largeGroundCheckCircle;
     [SerializeField] LayerMask _groundLayer;
+
+    [SerializeField] float _bounceForce;
+
+    [SerializeField] float _smallCrouchSize;
+    float _regularYSize;
 
     float _xMove;
     bool _isJumping;
@@ -26,14 +34,15 @@ public class PlayerMovement : MonoBehaviour
 
     private void Awake()
     {
+        _regularYSize = transform.localScale.y;
+
         _rb = GetComponent<Rigidbody2D>();
         canMove = true;
     }
 
     private void Update()
     {
-        SetGrav();
-        SetDamping();
+        
         GetInput();
         if (canMove)
         {
@@ -45,6 +54,23 @@ public class PlayerMovement : MonoBehaviour
         {
             _rb.gravityScale = _jumpHighGrav;
         }
+
+        Crouch();
+
+        SetGrav();
+        SetDamping();
+    }
+
+    private void Crouch()
+    {
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            transform.localScale = new Vector2(transform.localScale.x, _smallCrouchSize);
+        }
+        else
+        {
+            transform.localScale = new Vector2(transform.localScale.x, _regularYSize);
+        }
     }
 
     private void SetGrav()
@@ -54,12 +80,11 @@ public class PlayerMovement : MonoBehaviour
             _rb.gravityScale = _regGrav;
         } else if (Mathf.Approximately(_rb.linearVelocityY, 0.5f) && !IsGrounded())
         {
-            Debug.Log("APEX");
             _rb.gravityScale = _jumpLowGrav;
         } else if (_rb.linearVelocityY < 0)
         {
             _rb.gravityScale = _jumpHighGrav;
-        }
+        } 
     }
 
     private void SetDamping()
@@ -83,9 +108,11 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            _rb.AddForceX(_xMove * _speed * Time.deltaTime);
-            if (_rb.linearVelocityX > _maxSpeed) _rb.linearVelocityX = _maxSpeed;
+            _rb.AddForceX(_xMove * _speed);
         }
+
+        if (_rb.linearVelocityX > _maxSpeed) _rb.linearVelocityX = _maxSpeed;
+        if (_rb.linearVelocityX < -_maxSpeed) _rb.linearVelocityX = -_maxSpeed;
     }
 
     private bool IsGrounded()
@@ -93,8 +120,21 @@ public class PlayerMovement : MonoBehaviour
         return Physics2D.OverlapCircle(_groundCheckCircle.position, 0.1f, _groundLayer);
     }
 
+    bool IsAlmostGrounded()
+    {
+        return Physics2D.OverlapCircle(_largeGroundCheckCircle.position, 0.1f, _groundLayer);
+    }
+
     private void Jump()
     {
         _rb.linearVelocityY = _jumpForce;
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if(collision.gameObject.CompareTag("Bounce"))
+        {
+            _rb.AddForceY(_bounceForce);
+        }
     }
 }
