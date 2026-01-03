@@ -2,41 +2,52 @@ using UnityEngine;
 
 public class MovingPlatform : MonoBehaviour
 {
+    Rigidbody2D _rb;
+
     [SerializeField] Transform pos1, pos2;
     [SerializeField] float speed = 2;
 
+    Vector2 lastPos;
     Vector3 targetPos;
+
+    private void Awake()
+    {
+        _rb = GetComponent<Rigidbody2D>();
+    }
 
     private void Start()
     {
-        transform.position = pos1.position;
+        _rb.position = pos1.position;
         targetPos = pos2.position;
+        lastPos = _rb.position;
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
-        transform.position = Vector3.MoveTowards(transform.position, targetPos, speed * Time.deltaTime);
+        lastPos = _rb.position;
 
-        if(Vector2.Distance(transform.position, targetPos) < 0.01f)
+        Vector2 newPos = Vector2.MoveTowards(
+            _rb.position,
+            targetPos,
+            speed * Time.fixedDeltaTime
+        );
+
+        _rb.MovePosition(newPos);
+
+        if (Vector2.Distance(_rb.position, targetPos) < 0.05f)
         {
-            if(targetPos == pos1.position) { targetPos = pos2.position; }
-            if(targetPos == pos2.position) { targetPos = pos1.position; }
+            targetPos = (targetPos == (Vector3)pos1.position)
+                ? pos2.position
+                : pos1.position;
         }
     }
 
-    private void OnCollisionEnter2D(Collision2D collision)
+    private void OnCollisionStay2D(Collision2D collision)
     {
-        if(collision.gameObject.CompareTag("Player"))
+        if (collision.gameObject.CompareTag("Player"))
         {
-            collision.collider.transform.SetParent(transform);
-        }
-    }
-
-    private void OnCollisionExit2D(Collision2D collision)
-    {
-        if(collision.gameObject.CompareTag("Player"))
-        {
-            collision.collider.transform.SetParent(null);
+            Vector2 platformDelta = _rb.position - lastPos;
+            collision.rigidbody.position += platformDelta;
         }
     }
 }
