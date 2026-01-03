@@ -23,12 +23,20 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] Transform _largeGroundCheckCircle;
     [SerializeField] LayerMask _groundLayer;
 
+    [SerializeField] float _coyoteTime;
+    [SerializeField] float _jumpBufferTime;
+    float _coyoteTimer;
+    float _jumpBufferTimer;
+
     [SerializeField] float _bounceForce;
 
     [SerializeField] float _smallCrouchSize;
     float _regularYSize;
 
-    int _keyCount;
+    bool _isRight;
+    Vector2 _regularScale;
+
+    public int keyCount;
 
     float _xMove;
     bool _isJumping;
@@ -44,12 +52,14 @@ public class PlayerMovement : MonoBehaviour
 
     private void Start()
     {
-        _keyCount = 0;
+        _regularScale = transform.localScale;
+
+        keyCount = 0;
     }
 
     private void Update()
     {
-        
+
         GetInput();
         if (canMove)
         {
@@ -57,7 +67,7 @@ public class PlayerMovement : MonoBehaviour
             if (_isJumping && IsGrounded()) { Jump(); }
         }
 
-        if(_rb.linearVelocityY > 0 && Input.GetKeyUp(KeyCode.Space))
+        if (_rb.linearVelocityY > 0 && Input.GetKeyUp(KeyCode.Space))
         {
             _rb.gravityScale = _jumpHighGrav;
         }
@@ -66,6 +76,8 @@ public class PlayerMovement : MonoBehaviour
 
         SetGrav();
         SetDamping();
+
+        Flip();
     }
 
     private void Crouch()
@@ -82,7 +94,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void SetGrav()
     {
-        if( IsGrounded())
+        if (IsGrounded())
         {
             _rb.gravityScale = _regGrav;
         } else if (Mathf.Approximately(_rb.linearVelocityY, 0.5f) && !IsGrounded())
@@ -91,14 +103,14 @@ public class PlayerMovement : MonoBehaviour
         } else if (_rb.linearVelocityY < 0)
         {
             _rb.gravityScale = _jumpHighGrav;
-        } 
+        }
     }
 
     private void SetDamping()
     {
         if (!IsGrounded()) { _rb.linearDamping = _airDamping; }
         else if (_xMove != 0) { _rb.linearDamping = _moveDamping; }
-        else { _rb.linearDamping = _stillDamping; ;}
+        else { _rb.linearDamping = _stillDamping; ; }
     }
 
     private void GetInput()
@@ -137,6 +149,16 @@ public class PlayerMovement : MonoBehaviour
         _rb.linearVelocityY = _jumpForce;
     }
 
+
+    private void Flip()
+    {
+        if (_isRight && _rb.linearVelocityX < -1) _isRight = false;
+        if (!_isRight && _rb.linearVelocityX > 1) _isRight = true;
+
+        if (_isRight) { transform.localScale = new Vector2(_regularScale.x, _regularScale.y); }
+        else if (!_isRight) { transform.localScale = new Vector2(-_regularScale.x, _regularScale.y); }
+    }
+
     private void OnCollisionEnter2D(Collision2D collision)
     {
         if(collision.gameObject.CompareTag("Bounce"))
@@ -149,8 +171,13 @@ public class PlayerMovement : MonoBehaviour
     {
         if(collision.gameObject.CompareTag("Key"))
         {
-            _keyCount++;
+            keyCount++;
             Destroy(collision.gameObject);
         }
+    }
+
+    public void AddVel(Vector2 vel)
+    {
+        _rb.position += vel;
     }
 }
